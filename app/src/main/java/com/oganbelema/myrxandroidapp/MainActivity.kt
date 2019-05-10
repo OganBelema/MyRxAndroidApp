@@ -1,9 +1,10 @@
 package com.oganbelema.myrxandroidapp
 
-import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
+import android.util.Log
 import android.view.View
 import com.jakewharton.rxbinding2.view.RxView
+import io.reactivex.Observable
 import io.reactivex.Observer
 import io.reactivex.disposables.Disposable
 import io.reactivex.functions.Function
@@ -11,7 +12,7 @@ import io.reactivex.subjects.PublishSubject
 import kotlinx.android.synthetic.main.activity_main.*
 import java.util.concurrent.TimeUnit
 
-class MainActivity : AppCompatActivity() {
+class MainActivity : BaseActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -21,14 +22,19 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun init() {
+        mapAndFilter()
         initLayout()
+        //map()
     }
 
     private fun initLayout() {
-        //sugar
-        noSugar()
+        sugar()
+        //noSugar()
     }
 
+    /**
+     * Function to increment counter value with Rx without syntax sugar
+     */
     private fun noSugar() {
         val emitter = PublishSubject.create<View>()
 
@@ -37,13 +43,14 @@ class MainActivity : AppCompatActivity() {
         }
 
         val observer = object: Observer<View> {
-            override fun onComplete() {}
 
             override fun onSubscribe(d: Disposable) {}
 
             override fun onNext(t: View) {
                 incrementCounter2()
             }
+
+            override fun onComplete() {}
 
             override fun onError(e: Throwable) {}
         }
@@ -58,14 +65,52 @@ class MainActivity : AppCompatActivity() {
             .subscribe(observer)
     }
 
+    /**
+     * Function to increment counter value with Rx with syntax sugar
+     */
     private fun sugar() {
-        RxView.clicks(counterButton)
-            .map {
-                incrementCounter1()
-            }.throttleFirst(1000, TimeUnit.MILLISECONDS)
-            .subscribe {
-                incrementCounter2()
-            }
+        addDisposable(
+            RxView.clicks(counterButton)
+                .map {
+                    incrementCounter1()
+                }.throttleFirst(1000, TimeUnit.MILLISECONDS)
+                .subscribe {
+                    incrementCounter2()
+                }
+        )
+    }
+
+    /**
+     * Shows the capability of the Rx map operator
+     */
+    private fun map(){
+        addDisposable(
+            Observable.just(1, 5, 10, 20)
+                .map { theNumber ->
+                    theNumber * 3
+                }
+                .subscribe {
+                    Log.i("map", it.toString())
+                }
+        )
+    }
+
+    /**
+     * Shows the capability of the Rx filter operator
+     */
+    private fun mapAndFilter(){
+        addDisposable(
+            Observable.just(1, 5, 10, 20)
+                .map {
+                    it * 3
+                }
+                .filter {
+                    it % 2 == 0
+                }
+                .subscribe {
+                    Log.i("map unpacked", it.toString())
+                }
+        )
     }
 
     private fun incrementCounter2() {
